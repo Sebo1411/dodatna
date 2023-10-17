@@ -8,6 +8,24 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+void handleErr(const int err){
+    char* msg;
+    switch (err){
+        case WSA_INVALID_HANDLE:
+            *msg="Krivi 'handle' za objekt";
+            break;
+        case WSA_NOT_ENOUGH_MEMORY:
+            *msg="Nema vise memorije";
+            break;
+        case WSA_INVALID_PARAMETER:
+            *mgs="Krivi argumenti funkcije";
+            break;
+        case :
+
+            break;
+    }
+}
+
 //primjer 1 - jedno spajanje i preinaka poruke
 
 int main(){
