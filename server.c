@@ -7,12 +7,21 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 //primjer 1 - jedno spajanje i preinaka poruke
 
-void handleErr(const int);
+void handleErr(const long int);
 
-int main(){
+int main(int argc,const char** argv){
+    //Podatci o socket implementaciji
+    WSADATA wsaData; 
+    int err = WSAStartup(MAKEWORD(2,2),&wsaData);
+    if (err){
+        handleErr(err);
+        return -1;
+    }
+
 
     SOCKADDR_STORAGE addressFamily;
     addressFamily.ss_family=(ADDRESS_FAMILY) AF_INET;
@@ -25,16 +34,19 @@ int main(){
      */
     SOCKET sock=socket(addressFamily.ss_family,SOCK_STREAM,IPPROTO_TCP);
     if (sock==INVALID_SOCKET){
-        puts(WSAGetLastError());//funkcija za hendlanje
+        handleErr(WSAGetLastError());
         return -1;
     }
     
     if (bind(sock,(SOCKADDR_STORAGE *)&addressFamily,sizeof(addressFamily))==SOCKET_ERROR){
-        puts(WSAGetLastError());//funkcija za hendlanje
+        handleErr(WSAGetLastError());
         return -1;
     }
 
 
+
+    WSACleanup();
+    return 0;
 }
 
 
@@ -42,21 +54,33 @@ int main(){
 
 
 
-
-void handleErr(const int err){
-    char* msg;
+/*
+ * 
+ * Argument: rezultat funkcije WSAGetLastError()
+ * Ispisuje odgovarajucu poruku
+ *
+ */
+void handleErr(const long int err){
+    int maxLen=45;
+    char msg[maxLen];
     switch (err){
         case WSA_INVALID_HANDLE:
-            *msg="Krivi 'handle' za objekt";
+            strncpy(msg,"Krivi 'handle' za objekt",maxLen);
             break;
         case WSA_NOT_ENOUGH_MEMORY:
-            *msg="Nema vise memorije";
+            strncpy(msg,"Nema dovoljno memorije",maxLen);
             break;
         case WSA_INVALID_PARAMETER:
-            *msg="Krivi argumenti funkcije";
+            strncpy(msg,"Krivi argumenti funkcije",maxLen);
             break;
-        case 0:
-
+        case WSASYSNOTREADY:
+            strncpy(msg,"Sistem nije spreman za mreznu komunikaciju",maxLen);
             break;
+        case WSAVERNOTSUPPORTED:
+            strncpy(msg,"Trazena Windows socket verzija nije podrzana",maxLen);
+            break;
+        default:
+            snprintf(msg,maxLen,"Error s kodom %ld",err);
     }
+    fputs(msg,stderr);
 }
