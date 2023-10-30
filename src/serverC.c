@@ -12,24 +12,23 @@
 #include <pthread.h>
 #include <math.h>
 
-#define DEFAULT_PORT "10000"
-#define DEFAULT_BUFLEN 1024
-#define MAX_CONN 5
+#include "defaults.h"
 
 int gotovo=0;
 
 //primjer 1 - jedno spajanje i preinaka poruke
 
-void handleSockErr(const long int);
-void *handleClient(void *arg);
+void handleSockErr(const long int err);
+void* handleClient(void* arg);
 
 
 int main(int argc,const char** argv){
     //Podatci o socket implementaciji
     WSADATA wsaData; 
-    int err = WSAStartup(MAKEWORD(2,2),&wsaData);
+    int err=WSAStartup(MAKEWORD(2,2),&wsaData);
     if (err){
         handleSockErr(err);
+        WSACleanup();
         return -1;
     }
     if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2){
@@ -47,6 +46,7 @@ int main(int argc,const char** argv){
     err=getaddrinfo(NULL,DEFAULT_PORT,&hints,&rezultat);
     if (err){
         handleSockErr(WSAGetLastError());
+        WSACleanup();
         return -1;
     }
 
@@ -58,15 +58,17 @@ int main(int argc,const char** argv){
      */
     SOCKET sock=socket(rezultat->ai_family,rezultat->ai_socktype,rezultat->ai_protocol);
     if (sock==INVALID_SOCKET){
-        freeaddrinfo(rezultat);
         handleSockErr(WSAGetLastError());
+        freeaddrinfo(rezultat);
+        WSACleanup();
         return -1;
     }
     
     if (bind(sock,rezultat->ai_addr,(int) rezultat->ai_addrlen)==SOCKET_ERROR){
+        handleSockErr(WSAGetLastError());
         freeaddrinfo(rezultat);
         closesocket(sock);
-        handleSockErr(WSAGetLastError());
+        WSACleanup();
         return -1;
     }
 
@@ -74,24 +76,31 @@ int main(int argc,const char** argv){
     freeaddrinfo(rezultat);
     
     if (listen(sock,MAX_CONN)==SOCKET_ERROR){
-        closesocket(sock);
         handleSockErr(WSAGetLastError());
+        closesocket(sock);
+        WSACleanup();
         return -1;
     }
 
     pthread_t threadArr[MAX_CONN];
-
+    int clientCounter;
     SOCKET clientSock;
     while (!gotovo){
         clientSock=accept(sock,NULL,NULL);
         if (clientSock==INVALID_SOCKET){
-            closesocket(sock);
             handleSockErr(WSAGetLastError());
+            closesocket(sock);
+            WSACleanup();
             return -1;
         }
-        pthread_create(&(threadArr[1]),NULL,&handleClient,&clientSock);
+        pthread_create(&(threadArr[clientCounter % MAX_CONN]),NULL,handleClient,&clientSock);
     }
-
+    if (clientCounter>5){
+        for (int i=0;i<5;i++) pthread_detach(threadArr[i]);
+    }
+    else{
+        for (int i=0;i<clientCounter;i++) pthread_detach(threadArr[i]);
+    }
 
     closesocket(sock);
     WSACleanup();
@@ -101,17 +110,17 @@ int main(int argc,const char** argv){
 void *handleClient(void *arg){
     puts("got into handle client");
     SOCKET* sock=arg;
-    int recvStatus;
+    int status;
     char recvBuf[DEFAULT_BUFLEN];
-    recvStatus=recv(*sock,recvBuf,sizeof(recvBuf),0);
-    while(recvStatus>0){
-
-        recvStatus=recv(*sock,recvBuf,sizeof(recvBuf),0);
+    status=recv(*sock,recvBuf,sizeof(recvBuf),0);
+    while(status>0){
+        send(*sock,recvBuf,sizeof(recvBuf),0);
+        status=recv(*sock,recvBuf,sizeof(recvBuf),0);
     }
-    if (recvStatus==SOCKET_ERROR){
-
+    if (status==SOCKET_ERROR){
+        
     }
-
+    return NULL;
 }
 
 int prost(const long int n){
@@ -126,7 +135,6 @@ int prost(const long int n){
  * 
  * Argument: rezultat funkcije WSAGetLastError()
  * Ispisuje odgovarajucu poruku
- * Poziva WSACleanup()
  *
  */
 void handleSockErr(const long int err){
