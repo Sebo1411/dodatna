@@ -16,8 +16,6 @@
 
 int radi=TRUE;
 
-//primjer 1 - jedno spajanje i preinaka poruke
-
 void handleSockErr(const long int err);
 void* handleThreads(void* arg);
 void handleClient(SOCKET* sock);
@@ -110,6 +108,8 @@ int main(int argc,const char** argv){
         pthread_cond_signal(&uvjet);
         pthread_mutex_unlock(&mutex);
     }
+
+    for (int i=0;i<5;i++) pthread_join(threadArr[i],NULL);
 
     closesocket(sock);
     WSACleanup();
