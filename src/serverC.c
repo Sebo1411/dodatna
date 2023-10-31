@@ -14,12 +14,22 @@
 
 #include "defaults.h"
 
-int gotovo=0;
+int gotovo=FALSE;
 
 //primjer 1 - jedno spajanje i preinaka poruke
 
 void handleSockErr(const long int err);
-void* handleClient(void* arg);
+void* handleThreads(void* arg);
+void handleClient(SOCKET* sock);
+
+pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t uvjet=PTHREAD_COND_INITIALIZER;
+
+SOCKET queue[Q_SIZE];
+int qHeadInd=-1, qTailInd=-1;
+
+void enQueue(SOCKET* cSock);
+SOCKET deQueue();
 
 
 int main(int argc,const char** argv){
@@ -83,7 +93,8 @@ int main(int argc,const char** argv){
     }
 
     pthread_t threadArr[MAX_CONN];
-    int clientCounter;
+    for (int i=0;i<5;i++) pthread_create(&(threadArr[i]),NULL,handleThreads,NULL);
+
     SOCKET clientSock;
     while (!gotovo){
         clientSock=accept(sock,NULL,NULL);
@@ -93,13 +104,10 @@ int main(int argc,const char** argv){
             WSACleanup();
             return -1;
         }
-        pthread_create(&(threadArr[clientCounter % MAX_CONN]),NULL,handleClient,&clientSock);
-    }
-    if (clientCounter>5){
-        for (int i=0;i<5;i++) pthread_detach(threadArr[i]);
-    }
-    else{
-        for (int i=0;i<clientCounter;i++) pthread_detach(threadArr[i]);
+        pthread_mutex_lock(&mutex);
+        enQueue(&clientSock);
+        pthread_cond_signal(&uvjet);
+        pthread_mutex_unlock(&mutex);
     }
 
     closesocket(sock);
@@ -107,9 +115,22 @@ int main(int argc,const char** argv){
     return 0;
 }
 
-void *handleClient(void *arg){
+void* handleThreads(void* arg){
+    SOCKET client;
+    while (TRUE){
+        pthread_mutex_lock(&mutex);
+        if ((client=deQueue())==0){
+            pthread_cond_wait(&uvjet,&mutex);
+            client=deQueue();
+        }
+        pthread_mutex_unlock(&mutex);
+
+        if (client!=0) handleClient(&client);
+    }
+}
+
+void handleClient(SOCKET* sock){
     puts("got into handle client");
-    SOCKET* sock=arg;
     int status;
     char recvBuf[DEFAULT_BUFLEN];
     status=recv(*sock,recvBuf,sizeof(recvBuf),0);
@@ -117,10 +138,8 @@ void *handleClient(void *arg){
         send(*sock,recvBuf,sizeof(recvBuf),0);
         status=recv(*sock,recvBuf,sizeof(recvBuf),0);
     }
-    if (status==SOCKET_ERROR){
-        
-    }
-    return NULL;
+    if (status==SOCKET_ERROR)
+        perror("socket error");
 }
 
 int prost(const long int n){
@@ -161,4 +180,27 @@ void handleSockErr(const long int err){
     }
     fputs(msg,stderr);
     WSACleanup();
+}
+
+void enQueue(SOCKET* cSock){
+    //queue je pun
+    if ((qHeadInd==qTailInd+1) || (qHeadInd==0 && qTailInd==Q_SIZE-1)){
+        perror("Previse prometa");
+        return;
+    }
+    if (qHeadInd==-1) qHeadInd=0;
+    qTailInd=(qTailInd+1)%Q_SIZE;
+    queue[qTailInd]=*cSock;
+}
+
+SOCKET deQueue(){
+    //queue je prazan
+    if (qHeadInd==-1) return 0;
+    SOCKET ret=queue[qHeadInd];
+    //samo 1 element
+    if (qHeadInd==qTailInd){
+        qHeadInd=-1;
+        qTailInd=-1;
+    }else qHeadInd=(qHeadInd+1)%Q_SIZE;
+    return ret;
 }

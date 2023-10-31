@@ -69,7 +69,20 @@ int main(int argc,char** argv){
         WSACleanup();
         return -1;
     }
-    recv(sock,sendBuff,sizeof(sendBuff),0);
+
+    err=recv(sock,sendBuff,sizeof(sendBuff),0);
+    if (err==SOCKET_ERROR){
+        closesocket(sock);
+        handleSockErr(err);
+        WSACleanup();
+        return -1;
+    }
+    puts(sendBuff);
+
+    puts("Pritisni bilo koji gumb da izades");
+    getc(stdin);
+    closesocket(sock);
+    WSACleanup();
 }
 
 
