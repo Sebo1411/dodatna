@@ -14,7 +14,7 @@
 
 #include "defaults.h"
 
-int gotovo=FALSE;
+int radi=TRUE;
 
 //primjer 1 - jedno spajanje i preinaka poruke
 
@@ -31,6 +31,7 @@ int qHeadInd=-1, qTailInd=-1;
 void enQueue(SOCKET* cSock);
 SOCKET deQueue();
 
+int prost(long long int n);
 
 int main(int argc,const char** argv){
     //Podatci o socket implementaciji
@@ -96,7 +97,7 @@ int main(int argc,const char** argv){
     for (int i=0;i<5;i++) pthread_create(&(threadArr[i]),NULL,handleThreads,NULL);
 
     SOCKET clientSock;
-    while (!gotovo){
+    while (radi){
         clientSock=accept(sock,NULL,NULL);
         if (clientSock==INVALID_SOCKET){
             handleSockErr(WSAGetLastError());
@@ -117,7 +118,7 @@ int main(int argc,const char** argv){
 
 void* handleThreads(void* arg){
     SOCKET client;
-    while (TRUE){
+    while (radi){
         pthread_mutex_lock(&mutex);
         if ((client=deQueue())==0){
             pthread_cond_wait(&uvjet,&mutex);
@@ -130,22 +131,34 @@ void* handleThreads(void* arg){
 }
 
 void handleClient(SOCKET* sock){
-    puts("got into handle client");
+    int gotovo=FALSE;
     int status;
+    long long int n;
+
+    char prostMsg[]="Broj je prost";
+    char nijeProstMsg[]="Broj nije prost";
+
     char recvBuf[DEFAULT_BUFLEN];
-    status=recv(*sock,recvBuf,sizeof(recvBuf),0);
-    while(status>0){
-        send(*sock,recvBuf,sizeof(recvBuf),0);
+    while (!gotovo){
         status=recv(*sock,recvBuf,sizeof(recvBuf),0);
+        while(status>0){
+            n=atoll(recvBuf);
+            if (n==-1) radi=FALSE;
+            if (n<2) gotovo=TRUE;
+            else if (prost(n)) status=send(*sock,prostMsg,sizeof(prostMsg),0);
+            else status=send(*sock,nijeProstMsg,sizeof(nijeProstMsg),0);
+            if (status==SOCKET_ERROR) break;
+            status=recv(*sock,recvBuf,sizeof(recvBuf),0);
+        }
+        if (status==SOCKET_ERROR) gotovo=TRUE;
     }
-    if (status==SOCKET_ERROR)
-        perror("socket error");
 }
 
-int prost(const long int n){
-    for (long i=2;i<lround(sqrt((double) n))+1;i++)
-        if (n%i==0 && n!=i) return 0;
-    return 1;
+int prost(long long int n){
+    if (n<2) return FALSE;
+    for (long long i=2;i<llround(sqrt((double) n))+1;i++)
+        if (n%i==0 && n!=i) return FALSE;
+    return TRUE;
 }
 
 
