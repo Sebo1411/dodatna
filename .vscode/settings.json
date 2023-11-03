@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "basetsd.h": "c",
+        "inttypes.h": "c",
+        "ostream": "cpp",
+        "stdlib.h": "c",
+        "pthread.h": "c",
+        "string.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "disabled",
+    "makefile.configurations": []
+}

@@ -2,6 +2,7 @@
 #define _WIN32_WINNT 0x0600
 #endif
 #pragma comment(lib, "ws2_32.lib")
+
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
@@ -128,6 +129,7 @@ void* handleThreads(void* arg){
 
         if (client!=0) handleClient(&client);
     }
+    return NULL;
 }
 
 void handleClient(SOCKET* sock){
