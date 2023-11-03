@@ -11,6 +11,7 @@
                 "-lws2_32",
                 "-Wall",
                 "-std=c17",
+                "--static",
                 "-o",
                 "${workspaceFolder}\\bin\\${fileBasenameNoExtension}.exe"
             ],
@@ -36,6 +37,7 @@
                 "${file}",
                 "-lws2_32",
                 "-std=c17",
+                "--static",
                 "-o",
                 "${workspaceFolder}\\bin\\${fileBasenameNoExtension}.exe"
             ],
