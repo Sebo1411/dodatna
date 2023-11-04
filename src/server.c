@@ -14,6 +14,7 @@
 #include <math.h>
 
 #include "defaults.h"
+#include "handleErr.h"
 
 int radi=TRUE;
 
@@ -161,40 +162,6 @@ int prost(long long int n){
     for (long long i=2;i<llround(sqrt((double) n))+1;i++)
         if (n%i==0 && n!=i) return FALSE;
     return TRUE;
-}
-
-
-
-/*
- * 
- * Argument: rezultat funkcije WSAGetLastError()
- * Ispisuje odgovarajucu poruku
- *
- */
-void handleSockErr(const long int err){
-    int maxLen=45;
-    char msg[maxLen];
-    switch (err){
-        case WSA_INVALID_HANDLE:
-            strncpy(msg,"Krivi 'handle' za objekt",maxLen);
-            break;
-        case WSA_NOT_ENOUGH_MEMORY:
-            strncpy(msg,"Nema dovoljno memorije",maxLen);
-            break;
-        case WSA_INVALID_PARAMETER:
-            strncpy(msg,"Krivi argumenti funkcije",maxLen);
-            break;
-        case WSASYSNOTREADY:
-            strncpy(msg,"Sistem nije spreman za mreznu komunikaciju",maxLen);
-            break;
-        case WSAVERNOTSUPPORTED:
-            strncpy(msg,"Trazena Windows socket verzija nije podrzana",maxLen);
-            break;
-        default:
-            snprintf(msg,maxLen,"Error s kodom %ld",err);
-    }
-    fputs(msg,stderr);
-    WSACleanup();
 }
 
 void enQueue(SOCKET* cSock){

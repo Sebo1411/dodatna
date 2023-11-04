@@ -4,11 +4,13 @@
 #pragma comment(lib, "ws2_32.lib")
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <conio.h>
 
 #include <stdio.h>
 #include <stdlib.h>
 
 #include "defaults.h"
+#include "handleErr.h"
 
 void handleSockErr(const long int err);
 
@@ -32,7 +34,7 @@ int main(int argc,char** argv){
     hints.ai_socktype=SOCK_STREAM;
     hints.ai_protocol=IPPROTO_TCP;
 
-    err=getaddrinfo(NULL,DEFAULT_PORT,&hints,&rezultat);
+    err=getaddrinfo(NULL,DEFAULT_PORT,&hints,&rezultat); //nodename == NULL za localhost, drugo ime za ostalo
     if (err){
         handleSockErr(WSAGetLastError());
         WSACleanup();
@@ -80,33 +82,7 @@ int main(int argc,char** argv){
     puts(sendBuff);
 
     puts("Pritisni bilo koji gumb da izades");
-    getc(stdin);
+    _getch();
     closesocket(sock);
     WSACleanup();
-}
-
-
-void handleSockErr(const long int err){
-    int maxLen=45;
-    char msg[maxLen];
-    switch (err){
-        case WSA_INVALID_HANDLE:
-            strncpy(msg,"Krivi 'handle' za objekt",maxLen);
-            break;
-        case WSA_NOT_ENOUGH_MEMORY:
-            strncpy(msg,"Nema dovoljno memorije",maxLen);
-            break;
-        case WSA_INVALID_PARAMETER:
-            strncpy(msg,"Krivi argumenti funkcije",maxLen);
-            break;
-        case WSASYSNOTREADY:
-            strncpy(msg,"Sistem nije spreman za mreznu komunikaciju",maxLen);
-            break;
-        case WSAVERNOTSUPPORTED:
-            strncpy(msg,"Trazena Windows socket verzija nije podrzana",maxLen);
-            break;
-        default:
-            snprintf(msg,maxLen,"Error s kodom %ld",err);
-    }
-    fputs(msg,stderr);
 }
