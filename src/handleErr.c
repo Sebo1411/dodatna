@@ -2,6 +2,7 @@
 //#include <ws2tcpip.h>
 
 #include <stdio.h>
+#include <conio.h>
 
 /*
  * 
@@ -32,5 +33,6 @@ void handleSockErr(const long int err){
             snprintf(msg,maxLen,"Error s kodom %ld",err);
             perror(msg);
     }
-    WSACleanup();
+    puts("Pritisni bilo koji gumb da izades...");
+    _getch();
 }

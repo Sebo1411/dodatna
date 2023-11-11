@@ -24,7 +24,8 @@ int main(int argc,char** argv){
         return -1;
     }
     if (LOBYTE(wsaData.wVersion) != 2 || HIBYTE(wsaData.wVersion) != 2){
-        puts("Nema zadovoljene verzije");
+        fputs("Nema zadovoljene verzije",stdout);
+        _getch();
         return -1;
     }
 
@@ -62,6 +63,15 @@ int main(int argc,char** argv){
     char sendBuff[DEFAULT_BUFLEN];
     char recvBuff[DEFAULT_BUFLEN];
 
+    fputs(">> Cekam spajanje...\n",stdout);
+    err=recv(sock,recvBuff,sizeof(recvBuff),0);
+    if (err==SOCKET_ERROR){
+        handleSockErr(WSAGetLastError());
+        closesocket(sock);
+        WSACleanup();
+        return -1;
+    }
+    fputs(">> Spojeno\n>> Upisi broj: ",stdout);
     fgets(sendBuff,sizeof(sendBuff),stdin);
 
     err=send(sock,sendBuff,sizeof(sendBuff),0);
@@ -79,9 +89,10 @@ int main(int argc,char** argv){
         WSACleanup();
         return -1;
     }
-    puts(sendBuff);
+    fputs(">> ",stdout);
+    fputs(sendBuff,stdout);
 
-    puts("Pritisni bilo koji gumb da izades");
+    fputs("\n>> Pritisni bilo koji gumb da izades...",stdout);
     _getch();
     closesocket(sock);
     WSACleanup();
