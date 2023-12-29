@@ -8,6 +8,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "defaults.h"
 #include "handleErr.h"
@@ -16,7 +18,7 @@ void handleSockErr(const long int err);
 
 int main(int argc,char** argv){
     int err;
-    WSADATA wsaData; 
+    WSADATA wsaData;
     err=WSAStartup(MAKEWORD(2,2),&wsaData);
     if (err){
         handleSockErr(err);
@@ -50,7 +52,14 @@ int main(int argc,char** argv){
         return -1;
     }
 
-    if (connect(sock,rezultat->ai_addr,(int) rezultat->ai_addrlen)==SOCKET_ERROR){
+    fputs(">> Cekam spajanje...\n",stdout);
+    for (int i=0;i<MAX_CONN_ATTEMPT;i++) {
+        if((err=connect(sock,rezultat->ai_addr,(int) rezultat->ai_addrlen))==SOCKET_ERROR){
+            usleep((double)MAX_TIMEOUT/MAX_CONN_ATTEMPT);
+        }
+        else break;
+    }
+    if (err==SOCKET_ERROR){
         handleSockErr(WSAGetLastError());
         closesocket(sock);
         freeaddrinfo(rezultat);
@@ -63,7 +72,6 @@ int main(int argc,char** argv){
     char sendBuff[DEFAULT_BUFLEN];
     char recvBuff[DEFAULT_BUFLEN];
 
-    fputs(">> Cekam spajanje...\n",stdout);
     err=recv(sock,recvBuff,sizeof(recvBuff),0);
     if (err==SOCKET_ERROR){
         handleSockErr(WSAGetLastError());
@@ -92,8 +100,9 @@ int main(int argc,char** argv){
     fputs(">> ",stdout);
     fputs(sendBuff,stdout);
 
+    closesocket(sock);
     fputs("\n>> Pritisni bilo koji gumb da izades...",stdout);
     _getch();
-    closesocket(sock);
+
     WSACleanup();
 }

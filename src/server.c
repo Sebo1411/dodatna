@@ -25,6 +25,9 @@ void* handleClientNum(void* arg);
 pthread_mutex_t mutex=PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t uvjet=PTHREAD_COND_INITIALIZER;
 
+pthread_mutex_t stringMutex=PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t stringUvjet=PTHREAD_COND_INITIALIZER;
+
 //red cekanja
 SOCKET queue[Q_SIZE];
 _Atomic int atm_qHeadInd=-1, atm_qTailInd=-1;
@@ -39,7 +42,7 @@ int bCeka;
 
 int main(int argc,const char** argv){
     //Podatci o socket implementaciji, trazimo zadanu verziju 2.2
-    WSADATA wsaData; 
+    WSADATA wsaData;
     int err=WSAStartup(MAKEWORD(2,2),&wsaData);
     if (err){
         handleSockErr(err);
@@ -56,7 +59,7 @@ int main(int argc,const char** argv){
      *  Ovaj socket:
      *
      *  IPv4
-     *  sequenced, reliable, two-way, connection-based byte streams with an OOB data transmission mechanism 
+     *  sequenced, reliable, two-way, connection-based byte streams with an OOB data transmission mechanism
      *  TCP
      *
      */
@@ -81,7 +84,7 @@ int main(int argc,const char** argv){
         WSACleanup();
         return -1;
     }
-    
+
     if (bind(sock,rezultat->ai_addr,(int) rezultat->ai_addrlen)==SOCKET_ERROR){
         handleSockErr(WSAGetLastError());
         freeaddrinfo(rezultat);
@@ -92,7 +95,7 @@ int main(int argc,const char** argv){
 
     //podatci nam vise ne trebaju
     freeaddrinfo(rezultat);
-    
+
     if (listen(sock,MAX_CONN)==SOCKET_ERROR){
         handleSockErr(WSAGetLastError());
         closesocket(sock);
@@ -118,11 +121,12 @@ int main(int argc,const char** argv){
             WSACleanup();
             return -1;
         }
-        
+
         pthread_mutex_lock(&mutex);
         pthread_cond_signal(&uvjet);
         enQueue(&clientSock);
         pthread_mutex_unlock(&mutex);
+        pthread_cond_signal(&stringUvjet);
     }
 
     for (int i=0;i<MAX_CONN;i++) pthread_join(threadArr[i],NULL);
@@ -134,12 +138,12 @@ int main(int argc,const char** argv){
 
 void* handleClientNum(void* arg){
     while (radi){
+        pthread_cond_wait(&stringUvjet,&stringMutex);
         if (atm_qHeadInd==-1) bCeka=0;
         else if (atm_qHeadInd>atm_qTailInd) bCeka=Q_SIZE-atm_qHeadInd+atm_qTailInd+1;
         else bCeka=atm_qTailInd-atm_qHeadInd+1;
-        printf(">> Broj klijenata:%10d, klijenti na cekanju:%10d\r",atm_bSpojenih,bCeka);
+        printf(">> Broj klijenata:%10d, klijenti na cekanju:%10d(?)\r",atm_bSpojenih,bCeka);
         fflush(stdout);
-        sleep(1);
     }
     return NULL;
 }
@@ -150,7 +154,7 @@ void* handleClientNum(void* arg){
  *  preuzimaju klijenta ak trenutno nemaju
  *  salju u handleClient
  *  vraca NULL
- * 
+ *
  */
 void* handleClientThreads(void* arg){
     SOCKET client;
@@ -166,6 +170,7 @@ void* handleClientThreads(void* arg){
         ++atm_bSpojenih;
         if (client!=0) handleClient(&client);
         --atm_bSpojenih;
+        pthread_cond_signal(&stringUvjet);
     }
     return NULL;
 }
@@ -175,7 +180,7 @@ void* handleClientThreads(void* arg){
  *  prima poruku, pretvara u long long
  *  za -1 gasi server, <2 gasi vezu s klijentom
  *  salje poruku je li broj prost
- * 
+ *
  */
 void handleClient(SOCKET* sock){
     int gotovo=FALSE;
