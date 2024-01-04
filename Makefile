@@ -1,8 +1,8 @@
 # -*- Makefile -*-
 
 CC=gcc
-FLAGS=-lws2_32 -std=c17 --static -Ofast
-dFLAGS=-lws2_32 -std=c17 --static -g
+FLAGS=-lws2_32 -std=c17 --static -Ofast -Wall -Wextra
+dFLAGS=-lws2_32 -std=c17 --static -g -Wall -Wextra
 
 all: bin/client.exe bin/server.exe bin/dclient.exe bin/dserver.exe
 
@@ -28,10 +28,10 @@ intermediates/handleErr.o: src/handleErr.c
 
 
 bin/dclient.exe: intermediates/dclient.o intermediates/dhandleErr.o
-	$(CC) intermediates/dclient.o intermediates/dhandleErr.o $(FLAGS) -o bin/dclient.exe
+	$(CC) intermediates/dclient.o intermediates/dhandleErr.o $(dFLAGS) -o bin/dclient.exe
 
 bin/dserver.exe: intermediates/dserver.o intermediates/dhandleErr.o
-	$(CC) intermediates/dserver.o intermediates/dhandleErr.o $(FLAGS) -o bin/dserver.exe
+	$(CC) intermediates/dserver.o intermediates/dhandleErr.o $(dFLAGS) -o bin/dserver.exe
 
 intermediates/dclient.o: src/client.c src/defaults.h
 	$(CC) -c src/client.c $(dFLAGS) -o intermediates/dclient.o

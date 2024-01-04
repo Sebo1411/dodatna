@@ -55,11 +55,13 @@ int main(int argc,char** argv){
     fputs(">> Cekam spajanje...\n",stdout);
     for (int i=0;i<MAX_CONN_ATTEMPT;i++) {
         if((err=connect(sock,rezultat->ai_addr,(int) rezultat->ai_addrlen))==SOCKET_ERROR){
-            usleep((double)MAX_TIMEOUT/MAX_CONN_ATTEMPT);
+            printf(">> Nema servera... Pokusaj spajanja %d\r",i);
+            usleep((useconds_t)MAX_TIMEOUT/(useconds_t)MAX_CONN_ATTEMPT);
         }
         else break;
     }
     if (err==SOCKET_ERROR){
+        printf("                                                      \r");
         handleSockErr(WSAGetLastError());
         closesocket(sock);
         freeaddrinfo(rezultat);
