@@ -1,10 +1,37 @@
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+    #ifndef _WIN32_WINNT
+    #define _WIN32_WINNT 0x0600
+    #endif 
+    #include <winsock2.h>
+    #include <ws2tcpip.h>
+#elif __APPLE__
+    #include <TargetConditionals.h>
+    #if TARGET_IPHONE_SIMULATOR
+         // iOS, tvOS, or watchOS Simulator
+    #elif TARGET_OS_MACCATALYST
+         // Mac's Catalyst (ports iOS API into Mac, like UIKit).
+    #elif TARGET_OS_IPHONE
+        // iOS, tvOS, or watchOS device
+    #elif TARGET_OS_MAC
+        // Other kinds of Apple platforms
+    #else
+    #   error "Unknown Apple platform"
+    #endif
+#elif __ANDROID__
+    // Below __linux__ check should be enough to handle Android,
+    // but something may be unique to Android.
+#elif __linux__
+    #include <sys/types.h>          /* See NOTES */
+    #include <sys/socket.h>
+    typedef struct sock SOCKET
+#elif __unix__ // all unices not caught above
+    // Unix
+#elif defined(_POSIX_VERSION)
+    // POSIX
+#else
+#   error "Unknown compiler"
 #endif
-#pragma comment(lib, "ws2_32.lib")
-
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>

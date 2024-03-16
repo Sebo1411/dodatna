@@ -1,8 +1,8 @@
 # -*- Makefile -*-
 
 CC=gcc
-FLAGS=-lws2_32 -std=c17 --static -Ofast -Wall -Wextra
-dFLAGS=-lws2_32 -std=c17 --static -g -Wall -Wextra
+FLAGS=-lws2_32 -std=c17 --static -O2 -Wall -Wextra
+dFLAGS=-lws2_32 -std=c17 --static -g3 -Wall -Wextra
 
 all: bin/client.exe bin/server.exe bin/dclient.exe bin/dserver.exe
 
